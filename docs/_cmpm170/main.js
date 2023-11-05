@@ -9,6 +9,8 @@ characters = [
 
 options = {};
 
+let player;
+
 class Player {
   position;
   velocity;
@@ -38,6 +40,9 @@ class Player {
 
     if (this.position.y < 75) {
       this.velocity.add(vec(0, 0.1))
+    } else if (this.position.y > 75) {
+      this.position = vec(this.position.x, 75);
+      this.jumping = false;
     }
   }
 }
@@ -57,28 +62,62 @@ class Obstacle {
   }
 }
 
-class GravitySwitcher extends Obstacle {
-  constructor() {
-    super();
-  }
-  update() {
-    super.update();
-    return box(this.position, 10);
+class PlayerGravitySwitch extends Player {
+  switchUpdate() {
+    if (this.desiredPosY == undefined) {
+      this.desiredPosY = 75;
+    }
+    if (this.position.y != this.desiredPosY) {
+      let diff = Math.sign(this.desiredPosY - this.position.y);
+      this.position.add(0, diff);
+    }
+    if (input.isJustPressed) {
+      if (this.desiredPosY == 75) {
+        this.desiredPosY = 35;
+      } else {
+        this.desiredPosY = 75;
+      }
+    }
+    box(this.position, 10);
   }
 }
 
-let player;
+class GravitySwitcher extends Obstacle {
+  triggered = false;
+  inert = false;
+  width = 100;
+  constructor() {
+    super();
+    this.position.add(this.width, 0);
+  }
+  update() {
+    super.update();
+    if (!this.triggered && player.position.x >= this.position.x - this.width/2) {
+      player.update = PlayerGravitySwitch.prototype.switchUpdate;
+      this.triggered = true;
+    }
+    if (!this.inert && player.position.x >= this.position.x + this.width/2) {
+      this.inert = true;
+      player.update = Player.prototype.update;
+    }
+
+    box(this.position.x, 85, this.width, 10);
+    box(this.position.x, 25, this.width, 10);
+  }
+}
+
 let obstacleSpawnTimer;
 
 let obstaclesToSpawn = [GravitySwitcher];
 let obstacles = [];
+
 function update() {
   if (!ticks) {
     player = new Player();
-    obstacleSpawnTimer = 0;
+    obstacleSpawnTimer = -400;
   }
 
-  if (ticks - obstacleSpawnTimer > 100) {
+  if (ticks - obstacleSpawnTimer > 400) {
     obstacles.push(new obstaclesToSpawn[rndi(0, obstaclesToSpawn.length)]());
     obstacleSpawnTimer = ticks;
   }
