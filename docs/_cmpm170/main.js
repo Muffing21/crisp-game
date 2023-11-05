@@ -5,6 +5,16 @@ description = `
 `;
 
 characters = [
+`
+lllll
+ lll
+  l
+`,
+`
+  l
+ lll
+lllll
+`
 ];
 
 options = {};
@@ -60,6 +70,10 @@ class Obstacle {
     this.position.sub(vec(1, 0));
 
   }
+
+  offscreen() {
+    return false;
+  }
 }
 
 class PlayerGravitySwitch extends Player {
@@ -72,17 +86,16 @@ class PlayerGravitySwitch extends Player {
       } else {
         this.desiredPosY = 75;
       }
-    }
-    if (this.position.y != this.desiredPosY) {
-      let diff = Math.sign(this.desiredPosY - this.position.y);
-      this.position.add(0, diff);
-    }
-    if (input.isJustPressed) {
+    } else if (input.isJustPressed) {
       if (this.desiredPosY == 75) {
         this.desiredPosY = 35;
       } else {
         this.desiredPosY = 75;
       }
+    }
+    if (this.position.y != this.desiredPosY) {
+      let diff = Math.sign(this.desiredPosY - this.position.y);
+      this.position.add(0, diff);
     }
     box(this.position, 10);
   }
@@ -92,9 +105,27 @@ class GravitySwitcher extends Obstacle {
   triggered = false;
   inert = false;
   width = 100;
+
+  spikes = [];
   constructor() {
     super();
     this.position.add(this.width, 0);
+
+    let numSpikes = Math.floor(Math.random() * 4) + 2;
+    for (var i = 0; i < numSpikes; i++) {
+      let bottom = 72;
+      if (Math.random() > 0.5) {
+        bottom = 35;
+      }
+
+      let x = i * this.width/(numSpikes) - this.width/2;
+      if (x >= this.width/2) {
+        x = this.width/2 + 7;
+      } else if (x <= -this.width/2) {
+        x = this.width/2 - 7;
+      }
+      this.spikes.push(vec(x, bottom));
+    }
   }
   update() {
     super.update();
@@ -106,22 +137,52 @@ class GravitySwitcher extends Obstacle {
       this.inert = true;
       player.update = Player.prototype.update;
       player.velocity = vec(player.velocity.x, 0);
+      player.desiredPosY = undefined;
+
+      addScore(10);
     }
 
+    color("red");
     box(this.position.x, 85, this.width, 10);
     box(this.position.x, 25, this.width, 10);
+    color("black");
+
+    let collision;
+    this.spikes.forEach((s) => {
+      let newPos = vec(s.x + this.position.x, s.y)
+      let charName = "b";
+      if (s.y <= 35) {
+        charName = "a";
+      }
+      let c = char(charName, newPos, {
+        scale: {
+          x: 2,
+          y: 5
+        }
+      });
+      if (c.isColliding.rect.black) {
+        collision = c;
+        return;
+      }
+    });
+    return collision;
+  }
+
+  offscreen() {
+    return this.position.x + this.width/2 <= 0;
   }
 }
 
 let obstacleSpawnTimer;
 
 let obstaclesToSpawn = [GravitySwitcher];
-let obstacles = [];
+let obstacles;
 
 function update() {
   if (!ticks) {
     player = new Player();
     obstacleSpawnTimer = -400;
+    obstacles = [];
   }
 
   if (ticks - obstacleSpawnTimer > 400) {
@@ -129,7 +190,14 @@ function update() {
     obstacleSpawnTimer = ticks;
   }
   player.update();
-  obstacles.forEach((o) => {
-    o.update();
+  remove(obstacles, (o) => {
+    if (o.offscreen()) {
+      return true;
+    }
+    let c = o.update();
+    if (c && c.isColliding.rect.black) {
+      play("hit");
+      end("You lose.");
+    }
   });
 }
