@@ -41,8 +41,8 @@ class Player {
     if (this.position.y < 75) {
       this.velocity.add(vec(0, 0.1))
     } else if (this.position.y > 75) {
+      this.velocity = vec(this.velocity.x, 0);
       this.position = vec(this.position.x, 75);
-      this.jumping = false;
     }
   }
 }
@@ -64,8 +64,14 @@ class Obstacle {
 
 class PlayerGravitySwitch extends Player {
   switchUpdate() {
+    // Get rid of any floating points for smooth movement:
+    this.position = vec(this.position.x, round(this.position.y));
     if (this.desiredPosY == undefined) {
-      this.desiredPosY = 75;
+      if (this.jumping) {
+        this.desiredPosY = 35;
+      } else {
+        this.desiredPosY = 75;
+      }
     }
     if (this.position.y != this.desiredPosY) {
       let diff = Math.sign(this.desiredPosY - this.position.y);
@@ -99,6 +105,7 @@ class GravitySwitcher extends Obstacle {
     if (!this.inert && player.position.x >= this.position.x + this.width/2) {
       this.inert = true;
       player.update = Player.prototype.update;
+      player.velocity = vec(player.velocity.x, 0);
     }
 
     box(this.position.x, 85, this.width, 10);
