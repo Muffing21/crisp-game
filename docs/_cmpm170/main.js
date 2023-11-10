@@ -33,6 +33,7 @@ class Player {
   }
 
   update() {
+    color("black");
     box(this.position, 10);
 
     if (this.jumping && this.position.y >= 75) {
@@ -59,6 +60,7 @@ class Player {
 
 class Obstacle {
   position;
+  width = 0;
   constructor() {
     this.position = vec(120, 75);
     if (this.constructor == Obstacle) {
@@ -73,6 +75,22 @@ class Obstacle {
 
   offscreen() {
     return false;
+  }
+}
+
+class Box extends Obstacle {
+  
+  update() {
+    super.update();
+    color("red");
+    return box(this.position, 5);
+  }
+  offscreen() {
+    if (this.position.x + this.width/2 < 0) {
+      addScore(10);
+      return true;
+    }
+    super.offscreen();
   }
 }
 
@@ -174,20 +192,23 @@ class GravitySwitcher extends Obstacle {
 }
 
 let obstacleSpawnTimer;
+let timerTarget = 100;
 
-let obstaclesToSpawn = [GravitySwitcher];
+let obstaclesToSpawn = [GravitySwitcher, Box];
 let obstacles;
 
 function update() {
   if (!ticks) {
     player = new Player();
-    obstacleSpawnTimer = -400;
+    obstacleSpawnTimer = -timerTarget;
     obstacles = [];
   }
 
-  if (ticks - obstacleSpawnTimer > 400) {
-    obstacles.push(new obstaclesToSpawn[rndi(0, obstaclesToSpawn.length)]());
+  if (ticks - obstacleSpawnTimer > timerTarget) {
+    let o = new obstaclesToSpawn[rndi(0, obstaclesToSpawn.length)]();
+    obstacles.push(o);
     obstacleSpawnTimer = ticks;
+    timerTarget = o.width + 100;
   }
   player.update();
   remove(obstacles, (o) => {
