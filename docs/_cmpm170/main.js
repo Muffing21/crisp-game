@@ -14,7 +14,14 @@ lllll
   l
  lll
 lllll
+`,
 `
+   l
+ lll
+llll
+ lll
+   l
+`,
 ];
 
 options = {};
@@ -173,9 +180,93 @@ class GravitySwitcher extends Obstacle {
   }
 }
 
+class PlayerJumpHold extends Player {
+  
+  
+  HoldUpdate(){
+      
+    if(input.isJustPressed){
+      play("jump");
+    }
+
+    if(input.isPressed && this.position.y >= 35){
+      this.position.y -= 1;
+    }
+    else{
+      if(this.position.y <= 75){
+        this.position.y += 0.5;
+      }
+    }
+    box(this.position, 10);
+  }
+}
+
+class JetPackObstacle extends Obstacle{
+  width = 100;
+  height = 60;
+  projectiles = []
+  triggered = false;
+  inert = false;
+
+  constructor(){
+    super();
+    this.position.add(this.width, 0);
+
+    let numProjectiles = Math.floor(rnd(6, 8));
+    for(let i = 0; i < numProjectiles; i++){
+      let y = rnd(30, 80);
+      let x = i * this.width/(numProjectiles) -this.width/2;
+      if(x >= this.width/2){
+        x = this.width/2 + 7;
+      } else if (x <= -this.width/2){
+        x = this.width - 7;
+      }
+      this.projectiles.push(vec(x, y));
+
+    }
+  }
+
+
+  update(){
+    if(!this.triggered && player.position.x >= this.position.x - this.width/2){
+      player.update = PlayerJumpHold.prototype.HoldUpdate;
+      this.triggered = true;
+    }
+    if(!this.inert && player.position.x >= this.position.x + this.width/2) {
+      this.inert = true;
+      player.update = Player.prototype.update;
+      player.velocity = vec(player.velocity.x, 0);
+
+      addScore(10);
+    }
+
+    color("red");
+    box(this.position.x, 85, this.width, 10);
+    box(this.position.x, 25, this.width, 10);
+    this.position.x -= 1;
+
+    let collision;
+    color("black");
+
+    this.projectiles.forEach((p) =>{
+      let newPos = vec(p.x + this.position.x, p.y);
+      let c = box(newPos, 5);
+      if(c.isColliding.rect.black){
+        collision = c;
+        return;
+      }
+    });
+    return collision;
+  }
+
+  offscreen(){
+    return this.position.x + this.width/2 <= 0;
+  }
+}
+
 let obstacleSpawnTimer;
 
-let obstaclesToSpawn = [GravitySwitcher];
+let obstaclesToSpawn = [, JetPackObstacle];
 let obstacles;
 
 function update() {
