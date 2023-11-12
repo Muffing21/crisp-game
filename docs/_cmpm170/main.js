@@ -219,7 +219,7 @@ class JetPackObstacle extends Obstacle{
       if(x >= this.width/2){
         x = this.width/2 + 7;
       } else if (x <= -this.width/2){
-        x = this.width - 7;
+        x = this.width/2 - 7;
       }
       this.projectiles.push(vec(x, y));
 
