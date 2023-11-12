@@ -266,7 +266,7 @@ class JetPackObstacle extends Obstacle{
 
 let obstacleSpawnTimer;
 
-let obstaclesToSpawn = [, JetPackObstacle];
+let obstaclesToSpawn = [GravitySwitcher, JetPackObstacle];
 let obstacles;
 
 function update() {
