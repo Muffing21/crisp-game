@@ -204,7 +204,7 @@ class PlayerJumpHold extends Player {
 class JetPackObstacle extends Obstacle{
   width = 100;
   height = 60;
-  projectiles = []
+  projectiles = [vec(0, 75)]    //pushed this one here by default, making sure the player does something incase bad random
   triggered = false;
   inert = false;
 
@@ -250,7 +250,7 @@ class JetPackObstacle extends Obstacle{
 
     this.projectiles.forEach((p) =>{
       let newPos = vec(p.x + this.position.x, p.y);
-      let c = box(newPos, 5);
+      let c = box(newPos, 2);
       if(c.isColliding.rect.black){
         collision = c;
         return;
