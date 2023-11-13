@@ -271,10 +271,10 @@ class DirectionPlayer extends Player {
 
     if (input.isJustPressed) {
       if (!this.switch) {
-        this.position.add(20, 0);
+        this.position.add(30, 0);
         this.switch = true;
       } else {
-        this.position.sub(20, 0);
+        this.position.sub(30, 0);
         this.switch = false;
       }
     }
@@ -307,7 +307,7 @@ class DirectionObstacle extends Obstacle {
   constructor() {
     super();
     this.position.add(this.width, 0);
-    let numSpikes = Math.floor(Math.random() * 4) + 2;
+    let numSpikes = Math.floor(Math.random() * 3) + 2;
     for (var i = 0; i < numSpikes; i++) {
       let bottom = 72;
       if (Math.random() > 0.5) {
@@ -325,7 +325,7 @@ class DirectionObstacle extends Obstacle {
   }
   update() {
     super.update();
-    
+
     player.update = DirectionPlayer.prototype.DirectionSwitch;
 
     color("red");
@@ -357,7 +357,7 @@ class DirectionObstacle extends Obstacle {
 
 let obstacleSpawnTimer;
 
-let obstaclesToSpawn = [DirectionObstacle];
+let obstaclesToSpawn = [JetPackObstacle, GravitySwitcher, DirectionObstacle];
 let obstacles;
 
 function update() {
