@@ -115,6 +115,7 @@ class PlayerGravitySwitch extends Player {
       let diff = Math.sign(this.desiredPosY - this.position.y);
       this.position.add(0, diff);
     }
+    color("black"); // Player character was sometimes rendered red. Make sure the player is always rendered black.
     box(this.position, 10);
   }
 }
@@ -191,10 +192,113 @@ class GravitySwitcher extends Obstacle {
   }
 }
 
+class PlayerColorGauntlet extends Player {
+  switchUpdate() {
+    color("black");
+    box(this.position, 10);
+
+    if (input.isJustPressed || input.isPressed) {
+      ++this.chargeTicks;
+      this.inputBuffer = Math.floor(this.chargeTicks / 15) % 3;
+
+      for (let i = 0; i <= this.inputBuffer; ++i) {
+        // Use a non-black color for indicator to avoid unfair game loss due to indicator
+        // overlapping with existing obstacles.
+        color("light_black");
+        box(15 + i * 35, 30, 25, 5);
+      }
+    }
+    else if (input.isJustReleased) {
+      this.inputColorIndex = this.inputBuffer;
+    }
+    else {
+      this.inputColorIndex = -1;
+      this.chargeTicks = 0;
+    }
+  }
+}
+
+class ColorGauntlet extends Obstacle {
+  static palette = ["red", "green", "blue", "yellow"];
+  
+  constructor() {
+    super();
+    this.position = vec(80, 0);
+
+    this.ticksSinceSpawn = 0;
+    
+    let colorSet = new Set();
+    while (colorSet.size < 3) {
+      colorSet.add(ColorGauntlet.palette[rndi(0, ColorGauntlet.palette.length)]);
+    }
+
+    this.colorChoices = Array.from(colorSet);
+    
+    // 2 to 4 bars per color gauntlet
+    let barCount = rndi(2, 5);
+    let offset = 0;
+    this.colorBars = [];
+    while (this.colorBars.length < barCount) {
+      offset += rndi(50, 76);
+      let barInfo = [this.colorChoices[rndi(0, this.colorChoices.length)], offset];
+      this.colorBars.push(barInfo);
+    }
+
+    player.inputBuffer = 0;
+    player.chargeTicks = 0;
+    player.inputColorIndex = -1;
+    
+    // Allow 180 ticks to let the player memorize the colors
+    this.width = 180 + offset + 10;
+  }
+
+  update() {
+    let collision;
+
+    // Give the player a 180-tick advance notice to allow memorization
+    if (this.ticksSinceSpawn >= 180) {
+      super.update();
+      
+      if (player.update != PlayerColorGauntlet.prototype.switchUpdate) {
+        player.update = PlayerColorGauntlet.prototype.switchUpdate;
+      }
+
+      if (this.colorBars.length > 0 && player.inputColorIndex >= 0 &&
+          this.colorChoices[player.inputColorIndex] == this.colorBars[0][0]) {
+            this.colorBars.shift();
+            addScore(5);
+      }
+
+      this.colorBars.forEach((barInfo) => {
+        color(barInfo[0]);
+        let bar = rect(this.position.x + barInfo[1], 45, 10, 40);
+        if (bar.isColliding.rect.black) collision = bar;
+      });
+    }
+
+    for (let i = 1; i <= this.colorChoices.length; ++i) {
+      color(this.ticksSinceSpawn < 180 ? this.colorChoices[i - 1] : "black");
+      text(`${i}`, 15 + 35 * (i - 1), 20);
+    }
+
+    ++this.ticksSinceSpawn;
+
+    return collision;
+  }
+
+  offscreen() {
+    if (this.colorBars.length == 0) {
+      player.update = Player.prototype.update;
+      return true;
+    }
+    return false;
+  }
+}
+
 let obstacleSpawnTimer;
 let timerTarget = 100;
 
-let obstaclesToSpawn = [GravitySwitcher, Box];
+let obstaclesToSpawn = [GravitySwitcher, Box, ColorGauntlet];
 let obstacles;
 
 function update() {
