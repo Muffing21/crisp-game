@@ -458,6 +458,8 @@ class ColorGauntlet extends Obstacle {
       });
     }
 
+    color("black");
+    text("HOLD AND RELEASE", vec(5, 10));
     for (let i = 1; i <= this.colorChoices.length; ++i) {
       color(this.ticksSinceSpawn < 180 ? this.colorChoices[i - 1] : "black");
       text(`${i}`, 15 + 35 * (i - 1), 20);
