@@ -347,7 +347,7 @@ class DirectionObstacle extends Obstacle {
 
     player.update = DirectionPlayer.prototype.DirectionSwitch;
 
-    color("red");
+    color("blue");
     box(this.position.x, 85, this.width, 10);
     box(this.position.x, 25, this.width, 10);
     color("black");
