@@ -323,6 +323,7 @@ class DirectionObstacle extends Obstacle {
   width = 100;
   spikes = [];
   triggered = false;
+  inert = false;
   constructor() {
     super();
     this.position.add(this.width, 0);
@@ -345,7 +346,19 @@ class DirectionObstacle extends Obstacle {
   update() {
     super.update();
 
-    player.update = DirectionPlayer.prototype.DirectionSwitch;
+    if (!this.triggered && player.position.x >= this.position.x - this.width / 2) {
+      player.update = DirectionPlayer.prototype.DirectionSwitch;
+      this.triggered = true;
+    }
+    
+    if (!this.inert && player.position.x >= this.position.x + this.width / 2) {
+      this.inert = true;
+      player.update = Player.prototype.update;
+      
+      player.position = vec(player.position.x, player.position.y);
+
+      addScore(10);
+    }
 
     color("blue");
     box(this.position.x, 85, this.width, 10);
