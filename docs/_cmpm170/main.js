@@ -5,16 +5,23 @@ description = `
 `;
 
 characters = [
-`
+  `
 lllll
  lll
   l
 `,
-`
+  `
   l
  lll
 lllll
-`
+`,
+  `
+   l
+ lll
+llll
+ lll
+   l
+`,
 ];
 
 options = {};
@@ -50,7 +57,7 @@ class Player {
     this.position.add(this.velocity);
 
     if (this.position.y < 75) {
-      this.velocity.add(vec(0, 0.1))
+      this.velocity.add(vec(0, 0.1));
     } else if (this.position.y > 75) {
       this.velocity = vec(this.velocity.x, 0);
       this.position = vec(this.position.x, 75);
@@ -70,7 +77,6 @@ class Obstacle {
   // Should return collision info.
   update() {
     this.position.sub(vec(1, 0));
-
   }
 
   offscreen() {
@@ -137,22 +143,25 @@ class GravitySwitcher extends Obstacle {
         bottom = 35;
       }
 
-      let x = i * this.width/(numSpikes) - this.width/2;
-      if (x >= this.width/2) {
-        x = this.width/2 + 7;
-      } else if (x <= -this.width/2) {
-        x = this.width/2 - 7;
+      let x = (i * this.width) / numSpikes - this.width / 2;
+      if (x >= this.width / 2) {
+        x = this.width / 2 + 7;
+      } else if (x <= -this.width / 2) {
+        x = this.width / 2 - 7;
       }
       this.spikes.push(vec(x, bottom));
     }
   }
   update() {
     super.update();
-    if (!this.triggered && player.position.x >= this.position.x - this.width/2) {
+    if (
+      !this.triggered &&
+      player.position.x >= this.position.x - this.width / 2
+    ) {
       player.update = PlayerGravitySwitch.prototype.switchUpdate;
       this.triggered = true;
     }
-    if (!this.inert && player.position.x >= this.position.x + this.width/2) {
+    if (!this.inert && player.position.x >= this.position.x + this.width / 2) {
       this.inert = true;
       player.update = Player.prototype.update;
       player.velocity = vec(player.velocity.x, 0);
@@ -168,7 +177,7 @@ class GravitySwitcher extends Obstacle {
 
     let collision;
     this.spikes.forEach((s) => {
-      let newPos = vec(s.x + this.position.x, s.y)
+      let newPos = vec(s.x + this.position.x, s.y);
       let charName = "b";
       if (s.y <= 35) {
         charName = "a";
@@ -176,8 +185,8 @@ class GravitySwitcher extends Obstacle {
       let c = char(charName, newPos, {
         scale: {
           x: 2,
-          y: 5
-        }
+          y: 5,
+        },
       });
       if (c.isColliding.rect.black) {
         collision = c;
@@ -188,7 +197,180 @@ class GravitySwitcher extends Obstacle {
   }
 
   offscreen() {
-    return this.position.x + this.width/2 <= 0;
+    return this.position.x + this.width / 2 <= 0;
+  }
+}
+
+class PlayerJumpHold extends Player {
+  HoldUpdate() {
+    if (input.isJustPressed) {
+      play("jump");
+    }
+
+    if (input.isPressed && this.position.y >= 35) {
+      this.position.y -= 1;
+    } else {
+      if (this.position.y <= 75) {
+        this.position.y += 0.5;
+      }
+    }
+    box(this.position, 10);
+  }
+}
+
+class JetPackObstacle extends Obstacle {
+  width = 100;
+  height = 60;
+  projectiles = [vec(0, 75)]; //pushed this one here by default, making sure the player does something incase bad random
+  triggered = false;
+  inert = false;
+
+  constructor() {
+    super();
+    this.position.add(this.width, 0);
+
+    let numProjectiles = Math.floor(rnd(6, 8));
+    for (let i = 0; i < numProjectiles; i++) {
+      let y = rnd(30, 80);
+      let x = (i * this.width) / numProjectiles - this.width / 2;
+      if (x >= this.width / 2) {
+        x = this.width / 2 + 7;
+      } else if (x <= -this.width / 2) {
+        x = this.width / 2 - 7;
+      }
+      this.projectiles.push(vec(x, y));
+    }
+  }
+
+  update() {
+    if (
+      !this.triggered &&
+      player.position.x >= this.position.x - this.width / 2
+    ) {
+      player.update = PlayerJumpHold.prototype.HoldUpdate;
+      this.triggered = true;
+    }
+    if (!this.inert && player.position.x >= this.position.x + this.width / 2) {
+      this.inert = true;
+      player.update = Player.prototype.update;
+      player.velocity = vec(player.velocity.x, 0);
+
+      addScore(10);
+    }
+
+    color("red");
+    box(this.position.x, 85, this.width, 10);
+    box(this.position.x, 25, this.width, 10);
+    this.position.x -= 1;
+
+    let collision;
+    color("black");
+
+    this.projectiles.forEach((p) => {
+      let newPos = vec(p.x + this.position.x, p.y);
+      let c = box(newPos, 2);
+      if (c.isColliding.rect.black) {
+        collision = c;
+        return;
+      }
+    });
+    return collision;
+  }
+
+  offscreen() {
+    return this.position.x + this.width / 2 <= 0;
+  }
+}
+
+class DirectionPlayer extends Player {
+  switch;
+  jumping;
+  DirectionSwitch() {
+    this.position = vec(this.position.x, round(this.position.y));
+
+    if (input.isJustPressed) {
+      if (!this.switch) {
+        this.position.add(30, 0);
+        this.switch = true;
+      } else {
+        this.position.sub(30, 0);
+        this.switch = false;
+      }
+    }
+    // Jumping logic
+    if (this.jumping && this.position.y >= 75) {
+      this.jumping = false;
+      this.velocity = vec(this.velocity.x, 0);
+    }
+    if (!this.jumping && input.isJustPressed) {
+      this.velocity.add(vec(0, -2));
+      play("jump");
+      this.jumping = true;
+    }
+
+    this.position.add(this.velocity);
+
+    if (this.position.y < 75) {
+      this.velocity.add(vec(0, 0.1));
+    } else if (this.position.y > 75) {
+      this.velocity = vec(this.velocity.x, 0);
+      this.position = vec(this.position.x, 75);
+    }
+    box(this.position, 10);
+  }
+}
+class DirectionObstacle extends Obstacle {
+  width = 100;
+  spikes = [];
+  triggered = false;
+  constructor() {
+    super();
+    this.position.add(this.width, 0);
+    let numSpikes = Math.floor(Math.random() * 3) + 2;
+    for (var i = 0; i < numSpikes; i++) {
+      let bottom = 72;
+      if (Math.random() > 0.5) {
+        bottom = 35;
+      }
+
+      let x = (i * this.width) / numSpikes - this.width / 2;
+      if (x >= this.width / 2) {
+        x = this.width / 2 + 7;
+      } else if (x <= -this.width / 2) {
+        x = this.width / 2 - 7;
+      }
+      this.spikes.push(vec(x, bottom));
+    }
+  }
+  update() {
+    super.update();
+
+    player.update = DirectionPlayer.prototype.DirectionSwitch;
+
+    color("red");
+    box(this.position.x, 85, this.width, 10);
+    box(this.position.x, 25, this.width, 10);
+    color("black");
+
+    let collision;
+    this.spikes.forEach((s) => {
+      let newPos = vec(s.x + this.position.x, s.y);
+      let charName = "b";
+      if (s.y <= 35) {
+        charName = "a";
+      }
+      let c = char(charName, newPos, {
+        scale: {
+          x: 2,
+          y: 5,
+        },
+      });
+      if (c.isColliding.rect.black) {
+        collision = c;
+        return;
+      }
+    });
+    return collision;
   }
 }
 
@@ -298,7 +480,7 @@ class ColorGauntlet extends Obstacle {
 let obstacleSpawnTimer;
 let timerTarget = 100;
 
-let obstaclesToSpawn = [GravitySwitcher, Box, ColorGauntlet];
+let obstaclesToSpawn = [JetPackObstacle, GravitySwitcher, DirectionObstacle, ColorGauntlet, Box];
 let obstacles;
 
 function update() {
