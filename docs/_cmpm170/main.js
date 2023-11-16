@@ -355,7 +355,7 @@ class DirectionObstacle extends Obstacle {
       this.inert = true;
       player.update = Player.prototype.update;
       
-      player.position = vec(player.position.x, player.position.y);
+      player.position = vec(25, player.position.y);
 
       addScore(10);
     }
