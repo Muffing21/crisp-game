@@ -446,6 +446,7 @@ class ColorGauntlet extends Obstacle {
     // Allow 180 ticks to let the player memorize the colors
     this.width = 180 + offset + 10;
   }
+  
 
   update() {
     let collision;
@@ -492,10 +493,125 @@ class ColorGauntlet extends Obstacle {
   }
 }
 
+class PhasePlayer extends Player {
+  switchUpdate()
+  {
+    if (input.isPressed)
+    {
+       color("blue");
+       
+    }
+    else
+    {
+      color("black");
+      
+    }
+    box(this.position, 10);
+  }
+}
+
+class PhaseObstacle extends Obstacle {
+  width = 100;
+  finished = false;
+  triggered = false;
+  blueSpikes = [];
+  blackSpikes = [];
+
+  constructor() {
+    super();
+    this.position.add(this.width, 0);
+
+    let numSpikes = 3;
+
+    for (var i = 0; i < numSpikes; i++) {
+      let bottom = 72;
+      if (Math.random() > 0.5) {
+        bottom = 35;
+      }
+
+      let x = (i * this.width) / numSpikes - this.width / 2;
+      if (x >= this.width / 2) {
+        x = this.width / 2 + 7;
+      } else if (x <= -this.width / 2) {
+        x = this.width / 2 - 7;
+      }
+
+      if (rnd(0, 10) >= 5){
+        this.blueSpikes.push(vec(x, bottom));
+      }
+      else{
+        this.blackSpikes.push(vec(x, bottom));
+      }
+    }
+  }
+
+  update()
+  {
+    super.update();
+    if (
+      !this.triggered &&
+      player.position.x >= this.position.x - this.width / 2 - 5
+    ) {
+      player.update = PhasePlayer.prototype.switchUpdate;
+      this.triggered = true;
+    }
+    if (!this.finished && player.position.x >= this.position.x + this.width / 2 + 5) {
+      this.finished = true;
+      player.update = Player.prototype.update;
+
+      addScore(10);
+    }
+
+    if(!this.finished)
+    {
+      color("black");
+      text("HOLD TO SWAP", vec(5, 10));
+      text("MATCH COLOR", vec(5, 20));
+    }
+
+      color("red");
+      box(this.position.x, 85, this.width, 10);
+      box(this.position.x, 25, this.width, 10);
+      
+      color("blue");
+      this.blueSpikes.forEach((s) => {
+        let newPos = vec(s.x + this.position.x, this.position.y - 5);
+        let charName = "b";
+        let c = char(charName, newPos, {
+          scale: {
+            x: 2,
+            y: 5,
+          },
+        });
+        if (c.isColliding.rect.black) {
+          play("hit");
+          end("You lose.");
+        }
+    });
+
+    color("black");
+    this.blackSpikes.forEach((s) => {
+      let newPos = vec(s.x + this.position.x, this.position.y - 5);
+      let charName = "b";
+      let c = char(charName, newPos, {
+        scale: {
+          x: 2,
+          y: 5,
+        },
+      });
+      if (c.isColliding.rect.blue) {
+        play("hit");
+        end("You lose.");
+      }
+  });
+}
+}
+
+
 let obstacleSpawnTimer;
 let timerTarget = 100;
 
-let obstaclesToSpawn = [JetPackObstacle, GravitySwitcher, DirectionObstacle, ColorGauntlet, Box];
+let obstaclesToSpawn = [JetPackObstacle, GravitySwitcher, DirectionObstacle, ColorGauntlet, PhaseObstacle, Box];
 let obstacles;
 
 function update() {
