@@ -351,7 +351,7 @@ class DirectionObstacle extends Obstacle {
       this.triggered = true;
     }
     
-    if (!this.inert && player.position.x >= this.position.x + this.width / 2) {
+    if (!this.inert && player.position.x >= this.position.x + this.width/2) {
       this.inert = true;
       player.update = Player.prototype.update;
       
@@ -365,6 +365,9 @@ class DirectionObstacle extends Obstacle {
     box(this.position.x, 25, this.width, 10);
     color("black");
 
+    if (this.inert) {
+      return;
+    }
     let collision;
     this.spikes.forEach((s) => {
       let newPos = vec(s.x + this.position.x, s.y);
@@ -569,7 +572,7 @@ class PhaseObstacle extends Obstacle {
       text("MATCH COLOR", vec(5, 20));
     }
 
-      color("red");
+      color("green");
       box(this.position.x, 85, this.width, 10);
       box(this.position.x, 25, this.width, 10);
       
